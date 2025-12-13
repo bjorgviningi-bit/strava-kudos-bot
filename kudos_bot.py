@@ -137,8 +137,8 @@ def main():
             except:
                 continue
             
-            if activity_date < yesterday:
-                continue
+            # if activity_date < yesterday:
+                # continue
             
             # Give kudos
             if give_kudos(access_token, activity_id):
