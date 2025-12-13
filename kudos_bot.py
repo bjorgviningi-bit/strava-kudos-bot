@@ -7,16 +7,6 @@ CLIENT_ID = os.getenv('STRAVA_CLIENT_ID')
 CLIENT_SECRET = os.getenv('STRAVA_CLIENT_SECRET')
 REFRESH_TOKEN = os.getenv('STRAVA_REFRESH_TOKEN')
 
-# Club IDs to monitor
-CLUB_IDS = [
-    'utadhlaupa',
-    '728834',
-    'hlaupdeloitte',
-    'vecctcommunity',
-    '186819',
-    '168720'
-]
-
 def get_access_token():
     url = 'https://www.strava.com/oauth/token'
     payload = {
@@ -34,9 +24,19 @@ def give_kudos(access_token, activity_id):
     response = requests.post(url, headers=headers)
     return response.status_code in [200, 201]
 
+def get_following_activities(access_token, page=1):
+    # Get activities from following feed
+    url = 'https://www.strava.com/api/v3/activities/following'
+    headers = {'Authorization': f'Bearer {access_token}'}
+    params = {'page': page, 'per_page': 200}
+    response = requests.get(url, headers=headers, params=params)
+    if response.status_code == 200:
+        return response.json()
+    return []
+
 def main():
     print(f"Starting Strava Kudos Bot at {datetime.now()}")
-    print(f"Monitoring {len(CLUB_IDS)} clubs...\n")
+    print("Fetching activities from following feed...\n")
     
     # Get access token
     try:
@@ -46,23 +46,17 @@ def main():
         print(f"✗ Error getting access token: {e}")
         return
     
-    # Get recent activities from each club
+    # Get recent activities from following
     all_activities = []
-    for club_id in CLUB_IDS:
+    for page in range(1, 3):  # Get first 2 pages (up to 400 activities)
         try:
-            url = f'https://www.strava.com/api/v3/clubs/{club_id}/activities'
-            headers = {'Authorization': f'Bearer {access_token}'}
-            params = {'per_page': 100}
-            response = requests.get(url, headers=headers, params=params)
-            
-            if response.status_code == 200:
-                activities = response.json()
-                print(f"✓ Club {club_id}: Found {len(activities)} activities")
-                all_activities.extend(activities)
-            else:
-                print(f"✗ Club {club_id}: Error {response.status_code}")
+            activities = get_following_activities(access_token, page)
+            if not activities:
+                break
+            all_activities.extend(activities)
+            print(f"✓ Page {page}: Found {len(activities)} activities")
         except Exception as e:
-            print(f"✗ Club {club_id}: {e}")
+            print(f"✗ Page {page}: Error {e}")
     
     print(f"\nTotal activities fetched: {len(all_activities)}")
     
