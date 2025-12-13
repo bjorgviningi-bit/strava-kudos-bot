@@ -92,8 +92,8 @@ def main():
         print("No activities to process")
         return
     
-    # Filter activities from last 24 hours and give kudos
-    yesterday = datetime.now() - timedelta(days=1)
+    # Filter activities from last 7 days and give kudos
+    yesterday = datetime.now() - timedelta(days=7)
     
     kudos_given = 0
     kudos_skipped = 0
