@@ -70,7 +70,8 @@ def main():
             activities = get_club_activities(access_token, club_id, per_page=100)
             
             if activities:
-                print(f"  Found {len(activities)} activities")
+                if len(activities) > 0:
+                                        print(f"DEBUG: First activity keys: {list(activities[0].keys())}")                print(f"  Found {len(activities)} activities")
                 # Add to list, avoiding duplicates
                 for activity in activities:
                     # Club activities have different structure - activity_id instead of id
