@@ -16,7 +16,7 @@ CLUB_IDS = [
     '186819',           # Club 186819
     '168720'            # Club 168720
     ]
-]def get_access_token():
+def get_access_token():
     """Get a fresh access token using the refresh token"""
     url = 'https://www.strava.com/oauth/token'
     payload = {
