@@ -19,21 +19,17 @@ def get_access_token():
     response = requests.post(url, data=payload)
     return response.json()['access_token']
 
-def get_athlete_activities(access_token, athlete_id, after_timestamp):
-    """Get activities for a specific athlete"""
-    url = f'https://www.strava.com/api/v3/athletes/{athlete_id}/activities'
+def get_activity_feed(access_token, page=1, per_page=30):
+    """Get activities from friends (activity feed)"""
+    url = 'https://www.strava.com/api/v3/activities/following'
     headers = {'Authorization': f'Bearer {access_token}'}
-    params = {'after': after_timestamp, 'per_page': 30}
+    params = {'page': page, 'per_page': per_page}
     response = requests.get(url, headers=headers, params=params)
-    return response.json() if response.status_code == 200 else []
-
-def get_followers(access_token):
-    """Get list of followers"""
-    url = 'https://www.strava.com/api/v3/athlete/followers'
-    headers = {'Authorization': f'Bearer {access_token}'}
-    params = {'per_page': 200}
-    response = requests.get(url, headers=headers, params=params)
-    return response.json() if response.status_code == 200 else []
+    if response.status_code == 200:
+        return response.json()
+    else:
+        print(f"Error fetching feed: {response.status_code}")
+        return []
 
 def give_kudos(access_token, activity_id):
     """Give kudos to an activity"""
@@ -46,38 +42,62 @@ def main():
     print(f"Starting Strava Kudos Bot at {datetime.now()}")
     
     # Get access token
-    access_token = get_access_token()
-    print("Access token obtained")
+    try:
+        access_token = get_access_token()
+        print("Access token obtained")
+    except Exception as e:
+        print(f"Error getting access token: {e}")
+        return
     
-    # Get followers
-    followers = get_followers(access_token)
-    print(f"Found {len(followers)} followers")
+    # Get activity feed from friends
+    print("Fetching activity feed...")
+    activities = get_activity_feed(access_token, per_page=200)
     
-    # Get activities from the last 24 hours
-    yesterday = int((datetime.now() - timedelta(days=1)).timestamp())
+    if not activities:
+        print("No activities found in feed")
+        return
+    
+    print(f"Found {len(activities)} activities in feed")
+    
+    # Filter activities from last 24 hours
+    yesterday = datetime.now() - timedelta(days=1)
     
     kudos_given = 0
-    for follower in followers:
-        follower_id = follower['id']
-        follower_name = f"{follower.get('firstname', '')} {follower.get('lastname', '')}"
-        
-        # Get follower's activities
-        activities = get_athlete_activities(access_token, follower_id, yesterday)
-        
-        for activity in activities:
+    kudos_already_given = 0
+    
+    for activity in activities:
+        try:
             activity_id = activity['id']
             activity_name = activity['name']
+            activity_type = activity.get('type', 'Unknown')
+            athlete_name = f"{activity['athlete'].get('firstname', '')} {activity['athlete'].get('lastname', '')}"
             kudos_count = activity.get('kudos_count', 0)
+            has_kudoed = activity.get('athlete_kudoed', False)
             
-            # Give kudos if the activity has 0 kudos
-            if kudos_count == 0:
-                if give_kudos(access_token, activity_id):
-                    kudos_given += 1
-                    print(f"✓ Gave kudos to {follower_name}: {activity_name}")
-                else:
-                    print(f"✗ Failed to give kudos to {follower_name}: {activity_name}")
+            # Check if activity is from last 24 hours
+            activity_date = datetime.strptime(activity['start_date'], '%Y-%m-%dT%H:%M:%SZ')
+            if activity_date < yesterday:
+                continue
+            
+            # Skip if already gave kudos
+            if has_kudoed:
+                kudos_already_given += 1
+                continue
+            
+            # Give kudos
+            if give_kudos(access_token, activity_id):
+                kudos_given += 1
+                print(f"✓ Gave kudos to {athlete_name}: {activity_name} ({activity_type})")
+            else:
+                print(f"✗ Failed to give kudos to {athlete_name}: {activity_name}")
+                
+        except Exception as e:
+            print(f"Error processing activity: {e}")
+            continue
     
-    print(f"\nBot finished! Gave {kudos_given} kudos total")
+    print(f"\nBot finished!")
+    print(f"Gave {kudos_given} new kudos")
+    print(f"Skipped {kudos_already_given} activities (already gave kudos)")
 
 if __name__ == '__main__':
     main()
