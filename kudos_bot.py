@@ -76,9 +76,7 @@ def main():
     seen = set()
     unique_activities = []
     for activity in all_activities:
-        activity['id']activity.get('id')
-            seen.add(activity['id'])
-            unique_activities.append(activity)
+            seen.add(activity.get('id'))            unique_activities.append(activity)
     
     print(f"Unique activities: {len(unique_activities)}")
     
