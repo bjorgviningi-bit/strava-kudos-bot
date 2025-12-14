@@ -9,10 +9,9 @@ REFRESH_TOKEN = os.getenv('STRAVA_REFRESH_TOKEN')
 
 # List of club IDs to monitor
 CLUB_IDS = [
-    '728834',          # Your clubs
-    'utadhlаupa',
-    'hlaupdeloitte',
-    'vectcommunity'
+    '728834',  # Your clubs
+    '1153900',  # Út að hlaupa
+    '1252837',  # Hlaupahópur Deloitte
 ]
 
 def get_access_token():
