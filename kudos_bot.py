@@ -76,7 +76,7 @@ def main():
     seen = set()
     unique_activities = []
     for activity in all_activities:
-        if activity['id'] not in seen:
+        activity['id']activity.get('id')
             seen.add(activity['id'])
             unique_activities.append(activity)
     
