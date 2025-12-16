@@ -70,12 +70,15 @@ def main():
             print(f"X Club {club_id}: Error {e}")
     
     print(f"\nTotal activities fetched: {len(all_activities)}")
+        if all_activities:
+        print(f"Sample activity keys: {list(all_activities[0].keys())}")
     
     # Remove duplicates by activity ID
     seen = set()
     unique_activities = []
     for activity in all_activities:
-        if activity.get('id') not in seen:
+        if 72
+        not in seen:
             seen.add(activity.get('id'))
             unique_activities.append(activity)    
     print(f"Unique activities: {len(unique_activities)}")
