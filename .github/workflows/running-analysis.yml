@@ -28,3 +28,12 @@ jobs:
           STRAVA_CLIENT_SECRET: ${{ secrets.STRAVA_CLIENT_SECRET }}
           STRAVA_REFRESH_TOKEN: ${{ secrets.STRAVA_REFRESH_TOKEN }}
         run: python running_analysis.py
+
+      - name: Generate dashboard
+        run: python generate_dashboard.py
+
+      - name: Upload dashboard artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: running-dashboard
+          path: dashboard.html
