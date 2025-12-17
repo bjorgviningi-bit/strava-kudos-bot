@@ -70,33 +70,48 @@ def main():
             print(f"X Club {club_id}: Error {e}")
     
     print(f"\nTotal activities fetched: {len(all_activities)}")
-        if all_activities:
-        print(f"Sample activity keys: {list(all_activities[0].keys())}")
     
-    # Remove duplicates by activity ID
+    # Remove duplicates - use composite key since club activities may not have 'id'
     seen = set()
     unique_activities = []
     for activity in all_activities:
-        if 72
-        not in seen:
-            seen.add(activity.get('id'))
-            unique_activities.append(activity)    
+        # Create unique key from available fields
+        athlete = activity.get('athlete', {})
+        key = (
+            athlete.get('firstname', ''),
+            athlete.get('lastname', ''),
+            activity.get('name', ''),
+            activity.get('distance', 0),
+            activity.get('moving_time', 0)
+        )
+        if key not in seen:
+            seen.add(key)
+            unique_activities.append(activity)
+    
     print(f"Unique activities: {len(unique_activities)}")
     
-    # Give kudos to all activities
+    # Give kudos to all activities - but we need actual activity IDs!
+    # The problem: club activities API doesn't return activity IDs
+    # Solution: Just try all activities without deduplication
     kudos_given = 0
     kudos_failed = 0
     
+    # Try giving kudos using the activity object directly
+    # If the API response actually contains an 'id', use it
     for activity in unique_activities:
-        activity_id = activity.get('id')
         athlete_name = activity.get('athlete', {}).get('firstname', 'Unknown')
         
-        if activity_id:
+        # Check if activity has an id field
+        if 'id' in activity:
+            activity_id = activity['id']
             if give_kudos(access_token, activity_id):
                 kudos_given += 1
                 print(f"✓ Gave kudos to {athlete_name} (ID: {activity_id})")
             else:
                 kudos_failed += 1
+        else:
+            print(f"⚠ No ID for {athlete_name}'s activity - cannot give kudos")
+            kudos_failed += 1
     
     print(f"\n=== Summary ===")
     print(f"Kudos given: {kudos_given}")
