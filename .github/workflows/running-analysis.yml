@@ -33,7 +33,7 @@ jobs:
         run: python generate_dashboard.py
 
       - name: Upload dashboard artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: running-dashboard
           path: dashboard.html
