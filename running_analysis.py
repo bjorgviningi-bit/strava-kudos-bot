@@ -45,38 +45,98 @@ def get_athlete_activities(access_token, per_page=200):
         
     return activities
 
+def print_table(data, title):
+    """Print a formatted table"""
+    print(f"\n{title}")
+    print("=" * 160)
+    
+    # Get all years and months
+    years = sorted(set(year for year, month in data.keys()), reverse=True)
+    months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+    
+    # Print header
+    print(f"{'Year':<8}", end="")
+    for month in months:
+        print(f"{month:>10}", end="")
+    print(f"{'Total':>12}")
+    print("-" * 160)
+    
+    # Print data for each year
+    for year in years:
+        print(f"{year:<8}", end="")
+        year_total = 0
+        
+        for month_num in range(1, 13):
+            key = (year, month_num)
+            value = data.get(key, 0)
+            year_total += value
+            
+            if value == 0:
+                print(f"{'':>10}", end="")
+            else:
+                if isinstance(value, float):
+                    print(f"{value:>10.1f}", end="")
+                else:
+                    print(f"{value:>10}", end="")
+        
+        if isinstance(year_total, float):
+            print(f"{year_total:>12.1f}")
+        else:
+            print(f"{year_total:>12}")
+    
+    print("=" * 160)
+
 def analyze_running_activities(activities):
-    """Analyze running activities"""
+    """Analyze running activities with tables"""
     running_activities = [a for a in activities if a['type'] == 'Run']
     
     if not running_activities:
         print("No running activities found.")
         return
     
-    # Calculate statistics
-    total_runs = len(running_activities)
-    total_distance = sum(a['distance'] for a in running_activities) / 1000  # Convert to km
-    total_time = sum(a['moving_time'] for a in running_activities) / 3600  # Convert to hours
-    total_elevation = sum(a.get('total_elevation_gain', 0) for a in running_activities)
-    
-    # Average pace (min/km)
-    avg_pace = (total_time * 60) / total_distance if total_distance > 0 else 0
-    
-    # Monthly breakdown
-    monthly_stats = defaultdict(lambda: {'count': 0, 'distance': 0, 'time': 0})
+    # Calculate statistics by year and month
+    monthly_count = {}
+    monthly_distance = {}
+    monthly_time = {}
+    monthly_elevation = {}
+    monthly_pace = {}
     
     for activity in running_activities:
         date = datetime.strptime(activity['start_date'], '%Y-%m-%dT%H:%M:%SZ')
-        month_key = date.strftime('%Y-%m')
+        key = (date.year, date.month)
         
-        monthly_stats[month_key]['count'] += 1
-        monthly_stats[month_key]['distance'] += activity['distance'] / 1000
-        monthly_stats[month_key]['time'] += activity['moving_time'] / 3600
+        distance_km = activity['distance'] / 1000
+        time_hours = activity['moving_time'] / 3600
+        elevation = activity.get('total_elevation_gain', 0)
+        
+        # Count
+        monthly_count[key] = monthly_count.get(key, 0) + 1
+        
+        # Distance
+        monthly_distance[key] = monthly_distance.get(key, 0) + distance_km
+        
+        # Time
+        monthly_time[key] = monthly_time.get(key, 0) + time_hours
+        
+        # Elevation
+        monthly_elevation[key] = monthly_elevation.get(key, 0) + elevation
+    
+    # Calculate average pace for each month
+    for key in monthly_distance:
+        if monthly_distance[key] > 0:
+            pace = (monthly_time[key] * 60) / monthly_distance[key]
+            monthly_pace[key] = pace
     
     # Print overall statistics
-    print("\n" + "="*50)
-    print("RUNNING STATISTICS")
-    print("="*50)
+    total_runs = len(running_activities)
+    total_distance = sum(a['distance'] for a in running_activities) / 1000
+    total_time = sum(a['moving_time'] for a in running_activities) / 3600
+    total_elevation = sum(a.get('total_elevation_gain', 0) for a in running_activities)
+    avg_pace = (total_time * 60) / total_distance if total_distance > 0 else 0
+    
+    print("\n" + "="*80)
+    print("OVERALL RUNNING STATISTICS")
+    print("="*80)
     print(f"Total Runs: {total_runs}")
     print(f"Total Distance: {total_distance:.2f} km")
     print(f"Total Time: {total_time:.2f} hours")
@@ -84,24 +144,22 @@ def analyze_running_activities(activities):
     print(f"Average Pace: {avg_pace:.2f} min/km")
     print(f"Average Distance per Run: {total_distance/total_runs:.2f} km")
     
-    # Print monthly breakdown
-    print("\n" + "="*50)
-    print("MONTHLY BREAKDOWN")
-    print("="*50)
-    
-    for month in sorted(monthly_stats.keys(), reverse=True):
-        stats = monthly_stats[month]
-        avg_pace_month = (stats['time'] * 60) / stats['distance'] if stats['distance'] > 0 else 0
-        print(f"\n{month}:")
-        print(f"  Runs: {stats['count']}")
-        print(f"  Distance: {stats['distance']:.2f} km")
-        print(f"  Time: {stats['time']:.2f} hours")
-        print(f"  Avg Pace: {avg_pace_month:.2f} min/km")
+    # Print tables
+    print("\n")
+    print_table(monthly_count, "MONTHLY RUN COUNT (Number of Runs)")
+    print("\n")
+    print_table(monthly_distance, "MONTHLY DISTANCE (km)")
+    print("\n")
+    print_table(monthly_time, "MONTHLY TIME (hours)")
+    print("\n")
+    print_table(monthly_elevation, "MONTHLY ELEVATION GAIN (m)")
+    print("\n")
+    print_table(monthly_pace, "MONTHLY AVERAGE PACE (min/km)")
     
     # Find best performances
-    print("\n" + "="*50)
+    print("\n" + "="*80)
     print("BEST PERFORMANCES")
-    print("="*50)
+    print("="*80)
     
     # Longest run
     longest_run = max(running_activities, key=lambda x: x['distance'])
@@ -118,6 +176,10 @@ def analyze_running_activities(activities):
         print(f"  Date: {fastest_run['start_date'][:10]}")
         print(f"  Name: {fastest_run['name']}")
         print(f"  Distance: {fastest_run['distance']/1000:.2f} km")
+    
+    print("\n" + "="*80)
+    print("Analysis complete!")
+    print("="*80)
 
 if __name__ == '__main__':
     print("Starting Running Analysis...")
@@ -134,10 +196,6 @@ if __name__ == '__main__':
         
         # Analyze running activities
         analyze_running_activities(activities)
-        
-        print("\n" + "="*50)
-        print("Analysis complete!")
-        print("="*50)
         
     except Exception as e:
         print(f"Error: {e}")
